@@ -1,0 +1,3 @@
+FREE = 0
+BOOKED = 1
+OCCUPIED = 2
