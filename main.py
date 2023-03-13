@@ -7,7 +7,7 @@ import utils.strings as strings
 import utils.states as states
 import utils.status as status
 import utils.ticket as ticket
-import excel.excel
+import excel.excel as excel
 
 from re import compile
 from aiogram import Bot, Dispatcher, executor, types
@@ -48,7 +48,10 @@ async def adminMenu(message: types.Message):
     user_id = message.from_user.id
 
     if message.text == "📑 Excel файл мест":
-        file = excel.excel.getExcelFile(database)
+        file = excel.getPlacesFile(database)
+        await message.answer_document(file)
+    elif message.text == "📑 Excel файл пользователей":
+        file = excel.getUsersFile(database)
         await message.answer_document(file)
     elif message.text == "🚫 Убрать бронь":
         await message.answer("Введите через пробел ряд и место, которое нужно убрать: ")

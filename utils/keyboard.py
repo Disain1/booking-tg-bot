@@ -55,6 +55,7 @@ def adminKeyboard(database: Database):
 
     keyboard.row("🚫 Убрать бронь")
     keyboard.row("📑 Excel файл мест")
+    keyboard.row("📑 Excel файл пользователей")
     keyboard.row("🚪 Выйти")
     
     return keyboard
