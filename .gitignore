@@ -2,3 +2,4 @@ database.db
 config.py
 *.xlsx
 *.pyc
+ticket*_*.png
