@@ -121,6 +121,9 @@ async def sendTicket(message: types.Message):
     await message.pin()
     file.close()
 
+    await message.answer("Билет успешно отправлен! ✅")
+    functions.setUserState(database, user_id, states.ADMIN_MENU)
+
 
 @dp.callback_query_handler(lambda query: (query.data == "book_place"))
 async def bookPlace(query: types.CallbackQuery):
