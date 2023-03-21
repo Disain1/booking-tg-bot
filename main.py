@@ -121,7 +121,7 @@ async def sendTicket(message: types.Message):
     await message.pin()
     file.close()
 
-    await message.answer("Билет успешно отправлен! ✅")
+    await bot.send_message(user_id, text="Билет успешно отправлен! ✅")
     functions.setUserState(database, user_id, states.ADMIN_MENU)
 
 
