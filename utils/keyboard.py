@@ -54,6 +54,7 @@ def adminKeyboard(database: Database):
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
 
     keyboard.row("🚫 Убрать бронь")
+    keyboard.row("🎟 Повторно отправить билет")
     keyboard.row("📑 Excel файл мест")
     keyboard.row("📑 Excel файл пользователей")
     keyboard.row("🚪 Выйти")

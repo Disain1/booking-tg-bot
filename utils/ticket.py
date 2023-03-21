@@ -8,6 +8,5 @@ def getTicketImage(row: int, place: int):
     draw_text.text((370, 1073), f"{place}", fill="#FFFFFF", font=font)
     draw_text.text((320, 1115), f"{row}", fill="#FFFFFF", font=font)
 
-    path = f"tickets/ticket{row}{place}.png"
+    path = f"tickets/ticket{row}_{place}.png"
     ticket.save(path)
-    return open(path, "rb")

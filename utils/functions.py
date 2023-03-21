@@ -48,4 +48,3 @@ def addBooking(db: Database, user_id: int, row: int, place: int, status: int):
 
 def getFreePlaceNumbers(db: Database):
     return db.getAll("SELECT row, count(*) FROM places WHERE status = 0 GROUP BY row")
-    

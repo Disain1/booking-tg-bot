@@ -53,8 +53,12 @@ async def adminMenu(message: types.Message):
     elif message.text == "📑 Excel файл пользователей":
         file = excel.getUsersFile(database)
         await message.answer_document(file)
+    elif message.text == "🎟 Повторно отправить билет":
+        functions.setUserState(database, user_id, states.SEND_TICKET)
+        await message.answer("Введите через пробел ряд и место, кому повторно отправить билет:")
     elif message.text == "🚫 Убрать бронь":
-        await message.answer("Введите через пробел ряд и место, которое нужно убрать: ")
+        functions.setUserState(database, user_id, states.DELETE_BOOKING)
+        await message.answer("Введите через пробел ряд и место, которое нужно убрать:")
     elif message.text == "🚪 Выйти":
         await message.answer("Выход... 🚪", reply_markup=types.ReplyKeyboardRemove())
         functions.setUserState(database, user_id, states.SELECT_ROW)
@@ -64,13 +68,58 @@ async def adminMenu(message: types.Message):
             caption=strings.SELECT_ROW,
             reply_markup=keyboard.rowsKeyboard(database)
         )
-    else:
-        try:
-            row, place = message.text.split()
-            functions.removeBooking(database, int(row), int(place))
-            await message.answer("Бронь убрана ✅")
-        except Exception:
-            pass
+    
+        
+@dp.message_handler(lambda message: functions.getUserState(database, message.from_user.id) is states.DELETE_BOOKING)
+async def deleteBooking(message: types.Message):
+    user_id = message.from_user.id
+
+    try:
+        row, place = message.text.split()
+    except Exception:
+        await message.answer("Данные введены неверно! ⚠️")
+        return
+
+    try:
+        functions.removeBooking(database, int(row), int(place))
+        functions.setUserState(database, user_id, states.ADMIN_MENU)
+        await message.answer("Бронь убрана ✅")
+    except Exception:
+        pass
+
+
+@dp.message_handler(lambda message: functions.getUserState(database, message.from_user.id) is states.SEND_TICKET)
+async def sendTicket(message: types.Message):
+    user_id = message.from_user.id
+
+    try:
+        row, place = message.text.split()
+    except Exception:
+        await message.answer("Данные введены неверно! ⚠️")
+        return
+
+    result = database.getOne("SELECT user_id FROM places WHERE row = ? AND place = ?", [row, place])
+
+    if result is None:
+        await message.answer("Никто не забронировал это место, невозможно отправить билет повторно ⚠️")
+        return
+    
+    try:
+        ticket.getTicketImage(row, place)
+        file = open(f"tickets/ticket{row}_{place}.png", "rb")
+    except Exception:
+        await message.answer("Возникла неизвестная ошибка, попробуйте позже!")
+        return
+    
+    message = await bot.send_photo(
+        chat_id=result[0],
+        photo=file,
+        caption=f"<b>Место: {place}\nРяд: {row}</b>\n\nВот твой билет, не потеряй 🤭",
+        reply_markup=keyboard.unbookButtonKeyboard(row, place)
+    )
+    
+    await message.pin()
+    file.close()
 
 
 @dp.callback_query_handler(lambda query: (query.data == "book_place"))
@@ -83,7 +132,7 @@ async def bookPlace(query: types.CallbackQuery):
 
 
 @dp.callback_query_handler(lambda query: query.data.startswith("unbook_place"))
-async def bookPlace(query: types.CallbackQuery):
+async def unbookPlace(query: types.CallbackQuery):
     user_id = query.from_user.id
     row, place = query.data.split("_")[2:4]
 
@@ -160,7 +209,7 @@ async def selectRow(query: types.CallbackQuery):
 
 
 @dp.callback_query_handler(lambda query: functions.getUserState(database, query.from_user.id) is states.SELECT_PLACE)
-async def place(query: types.CallbackQuery):
+async def selectPlace(query: types.CallbackQuery):
     user_id = query.from_user.id
     row, place = query.data.split("_")
 
@@ -177,23 +226,36 @@ async def place(query: types.CallbackQuery):
     if result != None:
         await query.answer("Ты уже забронировал место, если хочешь выбрать другое - отмени старую бронь", show_alert=True)
         return
+    
+    try:
+        ticket.getTicketImage(row, place)
+    except Exception:
+        await query.answer("Возникла неизвестная ошибка, попробуйте позже!")
+        return
+    
+    try:
+        file = open(f"tickets/ticket{row}_{place}.png", "rb")
+    except Exception:
+        await query.answer("Возникла неизвестная ошибка, попробуйте позже!")
+        return
 
     functions.addBooking(database, user_id, row, place, status.BOOKED)
     functions.setUserState(database, user_id, states.TICKET)
 
-    file = ticket.getTicketImage(row, place)
+    try:
+        await query.message.delete()
+    except Exception:
+        pass
     
-    await query.message.delete()
-
     message = await query.message.answer_photo(
-        file,
-        f"<b>Место: {place}\nРяд: {row}</b>\n\nВот твой билет, не потеряй 🤭",
-        reply_markup=keyboard.unbookButtonKeyboard(row, place)
+            file,
+            f"<b>Место: {place}\nРяд: {row}</b>\n\nВот твой билет, не потеряй 🤭",
+            reply_markup=keyboard.unbookButtonKeyboard(row, place)
         )
     
     await message.pin()
     
-    os.remove(file.name)
+    file.close()
 
 
 if __name__ == '__main__':
