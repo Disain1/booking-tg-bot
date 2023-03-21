@@ -139,6 +139,10 @@ async def unbookPlace(query: types.CallbackQuery):
     user_id = query.from_user.id
     row, place = query.data.split("_")[2:4]
 
+    result = database.getOne("SELECT user_id FROM places WHERE row = ? AND place = ?", [row, place])
+    if result is None: return
+    if result[0] != user_id: return
+
     await query.message.unpin()
     
     functions.removeBooking(database, row, place)
